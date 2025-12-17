@@ -2,3 +2,7 @@ node_modules
 
 # Ignore the SQLite database file
 *.db
+
+# Ignore Python virtual environment
+.venv/
+venv/
