@@ -2,7 +2,7 @@
   "name": "pgpc-campus-clinic-app",
   "version": "1.0.0",
   "description": "PGPC Clinic App with Python backend and static frontend.",
-  "main": "index.html",
+  "main": "frontend/index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
