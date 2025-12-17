@@ -1,0 +1,12 @@
+# Netlify configuration file
+
+# Build settings: Tell Netlify where your frontend code is.
+[build]
+  publish = "frontend"
+
+# Proxy rule: Redirect API calls to your backend service.
+# IMPORTANT: You will replace the URL with your actual Render backend URL.
+[[redirects]]
+  from = "/*"
+  to = "https://pgpc-clinic-api.onrender.com/:splat" # Use your actual Render URL here
+  status = 200
