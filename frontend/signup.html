@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sign Up — PGPC Campus Clinic</title>
+    <link rel="stylesheet" href="styles.css" />
+
+    <style>
+        .auth-container {
+            max-width: 420px;
+            margin: 80px auto;
+            padding: 22px;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(6px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+            color: #fff;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .auth-container input {
+            width: 90%;
+            padding: 10px;
+            margin-top: 12px;
+            border-radius: 6px;
+            border: none;
+            box-sizing: border-box;
+        }
+        
+        .auth-row {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .auth-row button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .back-to-home-link {
+            display: block;
+            margin-top: 15px;
+            color: #00aaff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="overlay"></div>
+    <div class="auth-container">
+        <div class="logo"></div>
+        <h2>Sign Up — PGPC Campus Clinic</h2>
+        <p id="message" style="font-size:14px; color:#eee; min-height: 20px;"></p>
+        
+        <input id="idnumber" type="text" placeholder="ID Number" required />
+        <input id="name" type="text" placeholder="Full Name" required />
+        <input id="password" type="password" placeholder="Password" required />
+
+        <div class="auth-row">
+            <button id="signupBtn">Sign Up</button>
+        </div>
+        <a href="index.html" class="back-to-home-link">Back to Home</a>
+    </div>
+
+<script>
+        const idNumberEl = document.getElementById('idnumber');
+        const nameEl = document.getElementById('name');
+        const passwordEl = document.getElementById('password');
+        const signupBtn = document.getElementById('signupBtn');
+        const msgEl = document.getElementById('message');
+        
+        const API_URL = "http://127.0.0.1:5000";
+
+        // If a token already exists, redirect to appropriate dashboard
+        if (localStorage.getItem("clinic_token")) {
+            try {
+                const token = localStorage.getItem("clinic_token");
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.is_admin === true) {
+                    window.location.href = "dashboard_admin.html";
+                } else {
+                    window.location.href = "dashboard_student.html";
+                }
+            } catch (e) {
+                console.error("Invalid token found in localStorage:", e);
+            }
+        }
+
+        async function handleSignup() {
+            msgEl.textContent = "Processing...";
+            signupBtn.disabled = true;
+
+            const payload = {
+                idnumber: idNumberEl.value,
+                name: nameEl.value,
+                password: passwordEl.value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/register`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "An error occurred.");
+                msgEl.textContent = "Signup successful! Please log in now.";
+            } catch (err) {
+                msgEl.textContent = `Error: ${err.message}`;
+            } finally {
+                signupBtn.disabled = false;
+            }
+        }
+
+        signupBtn.onclick = handleSignup;
+</script>
+
+</body>
+</html>

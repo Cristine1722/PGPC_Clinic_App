@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard - PGPC Clinic</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Additional styles specific to the dashboard */
+    .dashboard-container {
+      width: 90%;
+      max-width: 1200px; /* Wider for table content */
+      background: rgba(0, 0, 0, 0.75);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      z-index: 2;
+      position: relative;
+      color: #fff;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 15px;
+    }
+    .header h2 {
+      margin: 0;
+    }
+    .logout-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #dc3545;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .logout-btn:hover {
+      background: #c82333;
+    }
+    .admin-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .search-bar {
+      flex-grow: 1;
+      display: flex;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .action-btn {
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    th {
+      cursor: pointer;
+      user-select: none;
+    }
+    th:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    .empty-state, .permission-denied {
+      text-align: center;
+      padding: 50px;
+      font-size: 1.2em;
+      color: #ccc;
+    }
+    /* Styles for the student view */
+    .student-view {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .student-view h3 {
+      font-size: 1.8em;
+      font-weight: 500;
+    }
+    .student-view p {
+      font-size: 1.1em;
+      color: #ddd;
+    }
+    .add-record-btn {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 1.1em;
+      background-color: #007bff;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<div class="overlay"></div>
+
+<div class="dashboard-container">
+  <div class="header">
+    <h2>Student Records</h2>
+    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+  </div>
+
+  <div id="records-content">
+    <!-- This content will be replaced by JavaScript -->
+    <p class="empty-state">Loading records...</p>
+  </div>
+</div>
+
+<script>
+  const API = "http://127.0.0.1:5000";
+  const token = localStorage.getItem("clinic_token");
+  let allRecords = []; // Variable to store all fetched records
+  let sortColumn = 'date'; // Default sort column
+  let sortDirection = 'desc'; // Default sort direction (newest first)
+
+  function handleLogout() {
+    localStorage.removeItem("clinic_token");
+    window.location.href = "index.html";
+  }
+
+  // Decode JWT to check for admin status
+  function isUserAdmin(jwt) {
+    try {
+      const payload = JSON.parse(atob(jwt.split('.')[1]));
+      return payload.is_admin === true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function fetchAndDisplayRecords() {
+    if (!token) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    const contentDiv = document.getElementById('records-content');
+    const headerTitle = document.querySelector('.header h2');
+
+    // --- STUDENT VIEW ---
+    if (!isUserAdmin(token)) {
+      headerTitle.textContent = 'My Record Management'; // Change title for students
+      
+      // Always show the "Add Record" button for students.
+      const addRecordButtonHTML = `
+        <div class="student-view">
+          <button class="add-record-btn" onclick="location.href='record_add.html'">Add New Health Record</button>
+        </div>`;
+      
+      // The table or messages will be rendered in a separate container.
+      contentDiv.innerHTML = addRecordButtonHTML + `<div id="table-container"></div>`;
+      const tableContainer = document.getElementById('table-container');
+
+      try {
+        const res = await fetch(`${API}/my-records`, { // Fetch from the new endpoint
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch your records.');
+        const records = await res.json();
+        renderTable(records); // Render the table with their records
+
+      } catch (error) {
+        tableContainer.innerHTML = `<p class="empty-state">Error: ${error.message}</p>`;
+      }
+      return;
+    }
+
+    // --- ADMIN VIEW ---
+    try {
+      headerTitle.textContent = 'Clinic Records Management'; // Change title for admins
+      const res = await fetch(`${API}/records`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!res.ok) throw new Error('Failed to fetch records.');
+
+      const records = await res.json();
+      
+      allRecords = records; // Store records for filtering
+
+      // Add search bar HTML before rendering the table
+      const searchBarHTML = `
+        <div class="admin-controls">
+          <div class="search-bar">
+            <input type="text" id="recordSearchInput" onkeyup="filterAndDisplayRecords()" placeholder="Filter by name, ID, course, notes...">
+          </div>
+          <button class="action-btn" onclick="document.getElementById('recordSearchInput').value=''; filterAndDisplayRecords();">Clear</button>
+        </div>`;
+
+      contentDiv.innerHTML = searchBarHTML + `<div id="table-container"></div>`; // Add a container for the table
+      renderTable(allRecords); // Initial render of all records
+
+    } catch (error) {
+      contentDiv.innerHTML = `<p class="empty-state">Error: ${error.message}</p>`;
+    }
+  }
+
+  function renderTable(recordsToDisplay) {
+    const tableContainer = document.getElementById('table-container');
+
+    if (recordsToDisplay.length === 0) {
+      tableContainer.innerHTML = `<p class="empty-state">No student records found.</p>`;
+      return;
+    }
+
+    const isAdmin = isUserAdmin(token);
+    let headers = {
+      date: "Date",
+      idnumber: "ID Number",
+      name: "Name",
+      course: "Course/Grade",
+      case: "Case",
+      remarks: "Remarks"
+    };
+
+    let tableHTML = `<table><thead><tr>`;
+    for (const key in headers) {
+      const arrow = key === sortColumn ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : '';
+      // Make headers sortable only for admins
+      tableHTML += isAdmin 
+        ? `<th onclick="sortTable('${key}')">${headers[key]}${arrow}</th>`
+        : `<th>${headers[key]}</th>`;
+    }
+
+    if (isAdmin) {
+      tableHTML += `<th>Actions</th>`;
+    }
+    tableHTML += `</tr></thead><tbody>`
+
+    recordsToDisplay.forEach(rec => {
+      tableHTML += `<tr><td>${rec.date ? new Date(rec.date).toLocaleDateString() : 'N/A'}</td><td>${rec.idnumber || ''}</td><td>${rec.name || ''}</td><td>${rec.course || ''}</td><td>${rec.case || ''}</td><td>${rec.remarks || ''}</td>`;
+      if (isAdmin) {
+        tableHTML += `<td><button class="action-btn" style="background:#ffc107;" onclick="location.href='record_edit.html?id=${rec.id}'">Edit</button><button class="action-btn" style="background:#dc3545; color:white;" onclick="deleteRecord(${rec.id})">Delete</button></td>`
+      }
+      tableHTML += `</tr>`;
+    });
+    tableHTML += `</tbody></table>`;
+    tableContainer.innerHTML = tableHTML;
+  }
+
+  function sortTable(column) {
+    // If clicking the same column, reverse the direction. Otherwise, default to ascending.
+    if (sortColumn === column) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = column;
+      sortDirection = 'asc';
+    }
+
+    allRecords.sort((a, b) => {
+      let valA = a[column] || '';
+      let valB = b[column] || '';
+
+      // Handle date sorting separately
+      if (column === 'date') {
+        valA = new Date(valA);
+        valB = new Date(valB);
+      }
+
+      if (valA < valB) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (valA > valB) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+
+    // After sorting, re-render the table with the currently filtered records
+    filterAndDisplayRecords();
+  }
+
+  function filterAndDisplayRecords() {
+    const searchTerm = document.getElementById('recordSearchInput').value.toLowerCase();
+    const filteredRecords = allRecords.filter(rec => 
+      (rec.name && rec.name.toLowerCase().includes(searchTerm)) ||
+      (rec.idnumber && rec.idnumber.toLowerCase().includes(searchTerm)) ||
+      (rec.course && rec.course.toLowerCase().includes(searchTerm)) ||
+      (rec.case && rec.case.toLowerCase().includes(searchTerm))
+    );
+    renderTable(filteredRecords);
+  }
+
+  async function deleteRecord(recordId) {
+    if (!confirm('Are you sure you want to delete this record? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      const res = await fetch(`${API}/records/${recordId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to delete record.');
+      fetchAndDisplayRecords(); // Refresh the list after deleting
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+    }
+  }
+
+  // Run the function when the page loads
+  window.onload = fetchAndDisplayRecords;
+</script>
+
+</body>
+</html>

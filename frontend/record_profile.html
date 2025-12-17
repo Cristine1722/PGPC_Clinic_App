@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Record Profile</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .profile-box {
+      width: 500px;
+      margin: 120px auto;
+      background: rgba(0,0,0,0.6);
+      padding: 25px;
+      border-radius: 12px;
+      color: white;
+      z-index: 2;
+      position: relative;
+    }
+    h3 { margin-bottom: 10px; }
+  </style>
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<div class="profile-box">
+  <h2>Student Record</h2>
+  <p><strong>Date:</strong> <span id="date"></span></p>
+  <p><strong>ID Number:</strong> <span id="idnumber"></span></p>
+  <p><strong>Name:</strong> <span id="name"></span></p>
+  <p><strong>Course:</strong> <span id="course"></span></p>
+  <p><strong>Case:</strong></p>
+  <p id="case"></p>
+  <p><strong>Remarks:</strong> <span id="remarks"></span></p>
+  
+  <button onclick="history.back()">Back</button>
+</div>
+
+<script>
+  const API = "http://127.0.0.1:5000";
+  const token = localStorage.getItem("clinic_token");
+
+  const q = new URLSearchParams(location.search);
+  const id = q.get("id");
+
+  // Protect the route
+  if (!token) {
+    window.location.href = "../index.html";
+  }
+
+  async function loadRecord() {
+    const res = await fetch(`${API}/records/${id}`, {
+      headers: {
+        "Authorization": "Bearer " + token
+      }
+    });
+
+    const data = await res.json();
+
+    document.getElementById("date").textContent = data.date ? new Date(data.date).toLocaleDateString() : 'N/A';
+    document.getElementById("idnumber").textContent = data.idnumber;
+    document.getElementById("name").textContent = data.name;
+    document.getElementById("course").textContent = data.course;
+    document.getElementById("case").textContent = data.case;
+    document.getElementById("remarks").textContent = data.remarks;
+  }
+
+  if (id) {
+    loadRecord();
+  } else {
+    alert("No record ID specified.");
+  }
+</script>
+
+</body>
+</html>

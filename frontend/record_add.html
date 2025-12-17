@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Add Student Record</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    .form-box {
+      width: 450px;
+      margin: 100px auto;
+      background: rgba(0,0,0,0.6);
+      padding: 25px;
+      border-radius: 12px;
+      color: white;
+      position: relative;
+      z-index: 2;
+    }
+    input, textarea, select {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+    }
+    button {
+      width: 100%;
+      margin-top: 15px;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-size: 0.9em;
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<div class="form-box">
+  <h2>Add Student Record</h2>
+  <form id="addRecordForm" onsubmit="saveRecord(event)">
+    <label for="date">Date</label>
+    <input id="date" type="date" required />
+
+    <label for="idnumber">Student ID Number</label>
+    <input id="idnumber" placeholder="e.g., 2024-001" required />
+
+    <label for="name">Student Name</label>
+    <input id="name" placeholder="e.g., Juan Dela Cruz" required />
+
+    <label for="course">Course / Grade</label>
+    <input id="course" placeholder="e.g., BSIT-3A or Grade 12" required />
+
+    <label for="case">Case</label>
+    <textarea id="case" placeholder="Describe the student's condition..." required></textarea>
+
+    <label for="remarks">Remarks</label>
+    <select id="remarks" required>
+      <option value="" disabled selected>Select Remarks...</option>
+      <option value="Stay in Class">Stay in Class</option>
+      <option value="Go Home">Go Home</option>
+    </select>
+
+    <button type="submit">Save Record</button>
+    <button type="button" style="background:gray" onclick="history.back()">Cancel</button>
+  </form>
+
+  <p id="msg"></p>
+</div>
+
+<script>
+  const API = "http://127.0.0.1:5000";
+  const token = localStorage.getItem("clinic_token");
+
+  // Protect the route: if no token, redirect to login
+  if (!token) {
+    window.location.href = "../index.html";
+  }
+
+  async function saveRecord(event) {
+    event.preventDefault(); // Prevent default form submission
+    const submitButton = document.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = "Saving...";
+
+    if (!token) {
+      document.getElementById("msg").textContent = "Authentication error. Please log in again.";
+      return;
+    }
+
+    const payload = {
+      date: document.getElementById("date").value,
+      idnumber: document.getElementById("idnumber").value,
+      name: document.getElementById("name").value,
+      course: document.getElementById("course").value,
+      case: document.getElementById("case").value,
+      remarks: document.getElementById("remarks").value,
+    };
+
+    const res = await fetch(`${API}/records`, {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.status === 201) {
+      location.href = "dashboard_student.html";
+    } else {
+      let errorMessage = "Error saving record.";
+      try {
+        const errorData = await res.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        // Response was not JSON or other error
+      }
+      document.getElementById("msg").textContent = errorMessage;
+      submitButton.disabled = false;
+      submitButton.textContent = "Save Record";
+    }
+  }
+
+  // Automatically set the date to today
+  document.getElementById('date').valueAsDate = new Date();
+
+</script>
+
+</body>
+</html>

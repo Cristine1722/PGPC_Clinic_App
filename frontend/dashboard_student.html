@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Records- PGPC Clinic</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .dashboard-container { width: 90%; max-width: 1200px; background: rgba(0, 0, 0, 0.75); padding: 30px; border-radius: 12px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.18); z-index: 2; position: relative; color: #fff; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 15px; }
+    .header h2 { margin: 0; }
+    .logout-btn { padding: 10px 20px; border: none; border-radius: 8px; background: #dc3545; color: white; cursor: pointer; transition: background-color 0.3s; }
+    .logout-btn:hover { background: #c82333; }
+    .add-record-btn { padding: 10px 20px; border: none; border-radius: 8px; background-color: #007bff; color: white; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+    th { background-color: rgba(255, 255, 255, 0.1); }
+    .empty-state { text-align: center; padding: 50px; font-size: 1.2em; color: #ccc; }
+    .student-controls { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+<div class="overlay"></div>
+
+<div class="dashboard-container">
+  <div class="header">
+    <h2>My Record Management</h2>
+    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+  </div>
+
+  <div id="records-content">
+    <div class="student-controls">
+        <button class="add-record-btn" onclick="location.href='record_add.html'">Add New Health Record</button>
+    </div>
+    <div id="table-container">
+        <p class="empty-state">Loading records...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = "http://127.0.0.1:5000";
+  const token = localStorage.getItem("clinic_token");
+
+  function handleLogout() {
+    localStorage.removeItem("clinic_token");
+    window.location.href = "index.html";
+  }
+
+  function isUserAdmin(jwt) {
+    try {
+      const payload = JSON.parse(atob(jwt.split('.')[1]));
+      return payload.hasOwnProperty('is_admin') && payload.is_admin === true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function fetchStudentRecords() {
+    if (!token) {
+      window.location.href = "index.html";
+      return;
+    }
+    // If an admin accidentally lands here, send them to their dashboard
+    if (isUserAdmin(token)) {
+        window.location.href = "dashboard_admin.html";
+        return;
+    }
+
+    const tableContainer = document.getElementById('table-container');
+
+    try {
+      const res = await fetch(`${API}/my-records`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch your records.');
+      const records = await res.json();
+      renderStudentTable(records);
+
+    } catch (error) {
+      tableContainer.innerHTML = `<p class="empty-state">Error: ${error.message}</p>`;
+    }
+  }
+
+  function renderStudentTable(records) {
+    const tableContainer = document.getElementById('table-container');
+
+    if (records.length === 0) {
+      tableContainer.innerHTML = `<p class="empty-state">You have not submitted any records yet.</p>`;
+      return;
+    }
+
+    let tableHTML = `<table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Case</th>
+                                <th>Remarks</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+    records.forEach(rec => {
+      tableHTML += `<tr>
+                      <td>${rec.date ? new Date(rec.date).toLocaleDateString() : 'N/A'}</td>
+                      <td>${rec.case || ''}</td>
+                      <td>${rec.remarks || ''}</td>
+                      <td><button class="action-btn" style="background:#007bff;" onclick="location.href='record_profile.html?id=${rec.id}'">View</button></td>
+                    </tr>`;
+    });
+    tableHTML += `</tbody></table>`;
+    tableContainer.innerHTML = tableHTML;
+  }
+
+  window.onload = fetchStudentRecords;
+</script>
+
+</body>
+</html>

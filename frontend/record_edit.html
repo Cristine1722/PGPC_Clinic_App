@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Edit Record</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .form-box {
+      width: 450px;
+      margin: 100px auto;
+      background: rgba(0,0,0,0.6);
+      padding: 25px;
+      border-radius: 12px;
+      color: white;
+      position: relative;
+      z-index: 2;
+    }
+    input, textarea, select {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+    }
+    button {
+      width: 100%;
+      margin-top: 15px;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-size: 0.9em;
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<div class="form-box">
+  <h2>Edit Student Record</h2>
+
+  <form id="editRecordForm" onsubmit="updateRecord(event)">
+    <label for="date">Date</label>
+    <input id="date" type="date" required />
+
+    <label for="idnumber">Student ID Number</label>
+    <input id="idnumber" placeholder="e.g., 2024-001" required />
+
+    <label for="name">Student Name</label>
+    <input id="name" placeholder="e.g., Juan Dela Cruz" required />
+
+    <label for="course">Course / Grade</label>
+    <input id="course" placeholder="e.g., BSIT-3A or Grade 12" required />
+
+    <label for="case">Case</label>
+    <textarea id="case" placeholder="Describe the student's condition..." required></textarea>
+
+    <label for="remarks">Remarks</label>
+    <input id="remarks" placeholder="e.g., Stay in Class / Go Home" required />
+
+    <button type="submit">Update Record</button>
+  </form>
+  <button style="background:gray" onclick="history.back()">Cancel</button>
+
+  <p id="msg"></p>
+</div>
+
+<script>
+  const API = "http://127.0.0.1:5000";
+  const token = localStorage.getItem("clinic_token");
+
+  const query = new URLSearchParams(window.location.search);
+  const recordID = query.get("id");
+
+  // Protect the route and ensure we have an ID
+  if (!token) {
+    window.location.href = "../index.html";
+  }
+  if (!recordID) {
+    alert("No record ID specified.");
+    history.back();
+  }
+
+  async function loadRecord() {
+    const res = await fetch(`${API}/records/${recordID}`, {
+      headers: { "Authorization": "Bearer " + token }
+    });
+
+    const data = await res.json();
+
+    document.getElementById("date").value = data.date;
+    document.getElementById("idnumber").value = data.idnumber;
+    document.getElementById("name").value = data.name;
+    document.getElementById("course").value = data.course;
+    document.getElementById("case").value = data.case;
+    document.getElementById("remarks").value = data.remarks;
+  }
+
+  loadRecord();
+
+  async function updateRecord(event) {
+    event.preventDefault();
+    const payload = {
+      date: document.getElementById("date").value,
+      idnumber: document.getElementById("idnumber").value,
+      name: document.getElementById("name").value,
+      course: document.getElementById("course").value,
+      case: document.getElementById("case").value,
+      remarks: document.getElementById("remarks").value,
+    };
+
+    const res = await fetch(`${API}/records/${recordID}`, {
+      method: "PUT",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.status === 200) {
+      window.location.href = "dashboard_admin.html";
+      window.location.href = "dashboard_admin.html"; // Always redirect to admin dashboard after editing
+    } else {
+      document.getElementById("msg").textContent = "Update failed.";
+    }
+  }
+</script>
+
+</body>
+</html>

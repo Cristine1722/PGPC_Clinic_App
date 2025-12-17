@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard — PGPC Clinic</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .dash-container {
+      width: 90%;
+      max-width: 1000px;
+      margin: 90px auto;
+      background: rgba(0,0,0,0.6);
+      padding: 20px;
+      border-radius: 12px;
+      color: #fff;
+      z-index: 2;
+      position: relative;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table th, table td {
+      padding: 12px;
+      border-bottom: 1px solid #555;
+    }
+
+    th {
+      background: rgba(255,255,255,0.1);
+    }
+
+    button.action {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .add-btn {
+      margin-top: 10px;
+      background: green;
+      padding: 8px 14px;
+      border-radius: 8px;
+      color:white;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<div class="dash-container">
+  <h2>PGPC Clinic — Student Records</h2>
+  <button class="add-btn" onclick="openAddForm()">+ Add New Record</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>ID Number</th></th>
+        <th>Name</th>
+        <th>Course</th>
+        <th>Illness</th>
+        <th>Remarks</th>
+      </tr>
+    </thead>
+
+    <tbody id="recordList"></tbody>
+  </table>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAJjBO6Ly4Cu_HAmRh1kiPmzCL0C6MH7go",
+    authDomain: "campus-clinic-f88f1.firebaseapp.com",
+    projectId: "campus-clinic-f88f1",
+    storageBucket: "campus-clinic-f88f1.firebasestorage.app",
+    messagingSenderId: "1074498465956",
+    appId: "1:1074498465956:web:3d674703a56b77fbbd3631"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  let API = "http://127.0.0.1:5000";
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return window.location.href = "login.html";
+    loadRecords();
+  });
+
+  async function loadRecords() {
+    const token = await auth.currentUser.getIdToken();
+
+    const res = await fetch(`${API}/records`, {
+      headers: { "Authorization": "Bearer " + token }
+    });
+
+    const data = await res.json();
+    const list = document.getElementById("recordList");
+
+    list.innerHTML = "";
+
+    data.forEach(rec => {
+      list.innerHTML += `
+        <tr>
+          <td>${rec.name || "—"}</td>
+          <td>${rec.course || "—"}</td>
+          <td>${(rec.createdAt || "").substring(0,10)}</td>
+          <td>
+            <button class="action" onclick="editRecord('${rec.id}')">Edit</button>
+            <button class="action" style="background:red" onclick="deleteRecord('${rec.id}')">Del</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  window.openAddForm = () => window.location.href = "record_add.html";
+  window.editRecord = (id) => window.location.href = `record_edit.html?id=${id}`;
+
+  window.deleteRecord = async (id) => {
+    if (!confirm("Delete this record?")) return;
+
+    const token = await auth.currentUser.getIdToken();
+
+    await fetch(`${API}/records/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": "Bearer " + token }
+    });
+
+    loadRecords();
+  };
+</script>
+
+</body>
+</html>

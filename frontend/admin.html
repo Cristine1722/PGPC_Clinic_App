@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - User Management</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .dash-container {
+      width: 90%;
+      max-width: 800px;
+      margin: 90px auto;
+      background: rgba(0,0,0,0.6);
+      padding: 20px;
+      border-radius: 12px;
+      color: #fff;
+      z-index: 2;
+      position: relative;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table th, table td {
+      padding: 12px;
+      border-bottom: 1px solid #555;
+      text-align: left;
+    }
+    th { background: rgba(255,255,255,0.1); }
+    button.action {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .back-btn {
+      margin-top: 10px;
+      background: #6c757d;
+      padding: 8px 14px;
+      border-radius: 8px;
+      color:white;
+    }
+    .search-bar {
+      margin-top: 15px;
+      display: flex;
+      gap: 5px;
+    }
+    .search-bar input {
+      flex-grow: 1;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #555;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .search-bar button {
+      padding: 8px 15px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="overlay"></div>
+
+<div class="dash-container">
+  <h2>Admin — User Management</h2>
+  <button class="back-btn" onclick="location.href='dashboard_admin.html'">Back to Dashboard</button>
+  <div class="search-bar">
+    <input type="text" id="userSearchInput" placeholder="Search by ID number or name..." onkeyup="if(event.key==='Enter') loadUsers()">
+    <button class="action" onclick="loadUsers()">Search</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>ID Number</th>
+        <th>Name</th>
+        <th>Admin Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="userList"></tbody>
+  </table>
+</div>
+
+<script>
+  const API = "http://127.0.0.1:5000";
+  const token = localStorage.getItem("clinic_token");
+
+  // Decode the token to check for admin status without a server round-trip
+  function isTokenAdmin() {
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.is_admin === true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Protect the route
+  if (!token || !isTokenAdmin()) {
+    alert("Access denied. Admins only.");
+    window.location.href = "../index.html";
+  }
+
+  async function loadUsers() {
+    const searchInput = document.getElementById('userSearchInput');
+    const query = searchInput.value.trim();
+    
+    let url = `${API}/users`;
+    if (query) {
+      url += `?q=${encodeURIComponent(query)}`;
+    }
+    const res = await fetch(url, {
+      headers: { "Authorization": "Bearer " + token }
+    });
+
+    if (!res.ok) {
+        alert('Failed to load users. You may not have admin rights.');
+        return;
+    }
+
+    const users = await res.json();
+    const list = document.getElementById("userList");
+    list.innerHTML = "";
+
+    users.forEach(user => {
+      const isAdmin = user.is_admin === 1;
+      list.innerHTML += `
+        <tr>
+          <td>${user.id}</td>
+          <td>${user.idnumber}</td>
+          <td>${user.name}</td>
+          <td>${isAdmin ? 'Yes' : 'No'}</td>
+          <td>
+            <button class="action" onclick="toggleAdmin(${user.id}, ${!isAdmin})">
+              ${isAdmin ? 'Revoke Admin' : 'Make Admin'}
+            </button>
+            <button class="action" style="background:red" onclick="deleteUser(${user.id})">
+              Delete
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  async function toggleAdmin(userId, newStatus) {
+    if (!confirm(`Are you sure you want to change admin status for user ${userId}?`)) return;
+    await fetch(`${API}/users/${userId}`, {
+      method: "PUT",
+      headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+      body: JSON.stringify({ is_admin: newStatus })
+    });
+    loadUsers();
+  }
+
+  async function deleteUser(userId) {
+    if (!confirm(`Are you sure you want to DELETE user ${userId}? This cannot be undone.`)) return;
+    await fetch(`${API}/users/${userId}`, {
+      method: "DELETE",
+      headers: { "Authorization": "Bearer " + token }
+    });
+    loadUsers();
+  }
+
+  // Initial load
+  loadUsers();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,104 @@
+/* General Body and Background Styling */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: url('schoolbg.png') no-repeat center center fixed; /* Use school.png for the background */
+  background-size: cover;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* Semi-transparent overlay for readability */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+/* Main content container for forms */
+.container {
+  width: 90%;
+  max-width: 400px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  z-index: 2;
+  position: relative;
+}
+
+/* Style for the school logo */
+.logo {
+  width: 100px; /* Define width */
+  height: 100px; /* Define height */
+  margin: 0 auto 15px auto; /* Center the logo horizontally and add bottom margin */
+  background-image: url('pgpclogo.png'); /* Link the logo image */
+  background-size: contain; /* Ensure the logo fits within the dimensions */
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  font-weight: 500;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #555;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  box-sizing: border-box; /* Important for padding */
+}
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: #007bff;
+  color: white;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn:hover {
+  background: #0056b3;
+}
+
+.toggle-link {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9em;
+}
+
+.toggle-link a {
+  color: #00aaff;
+  text-decoration: none;
+  font-weight: 600;
+}

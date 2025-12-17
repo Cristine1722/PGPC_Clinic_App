@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Welcome — PGPC Campus Clinic</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .landing-container {
+      max-width: 420px;
+      margin: 80px auto;
+      padding: 22px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+      color: #fff;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+    .landing-container .button-group {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .landing-container .button-group button {
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .landing-container .button-group .student-btn {
+      background-color: #007bff;
+      color: white;
+    }
+    .landing-container .button-group .student-btn:hover {
+      background-color: #0056b3;
+    }
+    .landing-container .button-group .admin-btn {
+      background-color: #28a745;
+      color: white;
+    }
+    .landing-container .button-group .admin-btn:hover {
+      background-color: #218838;
+    }
+    .landing-container .signup-link {
+      display: block;
+      margin-top: 20px;
+      color: #17a2b8;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="overlay"></div>
+<div class="landing-container">
+  <div class="logo"></div>
+  <h2>Welcome to PGPC Campus Clinic</h2>
+  <p style="font-size:1.1em; color:#ddd;">Please select your role to proceed.</p>
+
+  <div class="button-group">
+    <button class="student-btn" onclick="location.href='login_student.html'">Student Login</button>
+    <button class="admin-btn" onclick="location.href='login_admin.html'">Admin / Staff Login</button>
+  </div>
+
+  <a href="signup.html" class="signup-link">Don't have an account? Sign Up</a>
+  <a href="forgot_password.html" class="signup-link" style="color: #ffc107;">Forgot Password?</a>
+</div>
+
+<script>
+  // Check if user is already logged in and redirect to appropriate dashboard
+  if (localStorage.getItem("clinic_token")) {
+    try {
+      const token = localStorage.getItem("clinic_token");
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.is_admin === true) {
+        window.location.href = "dashboard_admin.html";
+      } else {
+        window.location.href = "dashboard_student.html";
+      }
+    } catch (e) {
+      // If token is invalid, just stay on the landing page
+      console.error("Invalid token found in localStorage:", e);
+    }
+  }
+</script>
+</body>
+</html>
