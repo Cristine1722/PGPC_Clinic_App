@@ -8,5 +8,5 @@
 # IMPORTANT: You will replace the URL with your actual Render backend URL.
 [[redirects]]
   from = "/*"
-  to = "https://pgpc-clinic-api.onrender.com/:splat" # Use your actual Render URL here
+  to = "https://your-actual-render-url.onrender.com/:splat" # PASTE YOUR REAL RENDER URL HERE
   status = 200
