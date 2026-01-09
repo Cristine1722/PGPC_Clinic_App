@@ -1,154 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Admin Login — PGPC Campus Clinic</title>
-    <link rel="stylesheet" href="styles.css" />
-
-    <style>
-        .auth-container {
-            max-width: 420px;
-            margin: 80px auto;
-            padding: 22px;
-            border-radius: 12px;
-            background: rgba(0,0,0,0.55);
-            backdrop-filter: blur(6px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-            color: #fff;
-            text-align: center;
-            position: relative;
-            z-index: 2;
-        }
-
-        .auth-container input {
-            width: 90%;
-            padding: 10px;
-            margin-top: 12px;
-            border-radius: 6px;
-            border: none;
-            box-sizing: border-box;
-        }
-        
-        .auth-row {
-            margin-top: 12px;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-        .auth-row button {
-            flex: 1;
-            padding: 10px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .back-to-home-link {
-            display: block;
-            margin-top: 15px;
-            color: #00aaff;
-            text-decoration: none;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Login — PGPC Campus Clinic</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
 <div class="overlay"></div>
-    <div class="auth-container">
-        <div class="logo"></div>
-        <h2>Admin Login — PGPC Campus Clinic</h2>
-        <p id="message" style="font-size:14px; color:#eee; min-height: 20px;"></p>
-        
-        <input id="idnumber" type="text" placeholder="ID Number" required />
-        <input id="password" type="password" placeholder="Password" required />
 
-        <div class="auth-row">
-            <button id="loginBtn" style="background-color: #28a745; color: white;">Login</button>
-        </div>
-        
-        <div style="margin-top: 15px;">
-            <a href="signup.html" style="color: #17a2b8; text-decoration: none; font-size: 0.95em;">Register new account</a>
-        </div>
-        <a href="index.html" class="back-to-home-link">Back to Home</a>
+<div class="container">
+  <div class="logo"></div>
+  <h2>Admin / Staff Login</h2>
+  
+  <form id="loginForm">
+    <div class="input-group">
+      <label for="username">Username / ID</label>
+      <input type="text" id="username" placeholder="Enter Admin ID" required />
+    </div>
+    
+    <div class="input-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="••••••••" required />
     </div>
 
+    <button type="submit" class="btn">Login</button>
+    
+    <div class="toggle-link">
+      <a href="signup.html">Register new account</a><br><br>
+      <a href="index.html">Back to Home</a>
+    </div>
+  </form>
+</div>
+
 <script>
-        const idNumberEl = document.getElementById('idnumber');
-        const passwordEl = document.getElementById('password');
-        const loginBtn = document.getElementById('loginBtn');
-        const msgEl = document.getElementById('message');
-        const API_URL = "http://127.0.0.1:5000";
+  const API = "/api"; // Points to Netlify Function
 
-        // Check if already logged in
-        if (localStorage.getItem("clinic_token")) {
-             try {
-                const token = localStorage.getItem("clinic_token");
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                if (payload.is_admin === true) {
-                    window.location.href = "dashboard_admin.html";
-                } else {
-                    window.location.href = "dashboard_student.html";
-                }
-            } catch (e) {
-                console.error("Invalid token", e);
-            }
-        }
-        
-        function decodeToken(token) {
-            try {
-                return JSON.parse(atob(token.split('.')[1]));
-            } catch (e) {
-                return null;
-            }
-        }
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const btn = document.querySelector('.btn');
 
-        async function handleLogin() {
-            msgEl.textContent = "Processing...";
-            loginBtn.disabled = true;
+    try {
+      btn.textContent = 'Logging in...';
+      btn.disabled = true;
 
-            const payload = {
-                idnumber: idNumberEl.value,
-                password: passwordEl.value
-            };
+      const res = await fetch(`${API}/admin-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
 
-            try {
-                const res = await fetch(`${API_URL}/login`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
+      const data = await res.json();
 
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || "An error occurred.");
-
-                const tokenPayload = decodeToken(data.token);
-                const isAdmin = tokenPayload && tokenPayload.is_admin === true;
-
-                if (!isAdmin) {
-                    throw new Error("Access Denied. This login is for Admins/Staff only.");
-                }
-
-                localStorage.setItem("clinic_token", data.token);
-                window.location.href = "dashboard_admin.html";
-
-            } catch (err) {
-                msgEl.textContent = `Error: ${err.message}`;
-            } finally {
-                loginBtn.disabled = false;
-            }
-        }
-
-        loginBtn.onclick = handleLogin;
-
-        // Allow pressing Enter to login
-        passwordEl.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                handleLogin();
-            }
-        });
+      if (data.success) {
+        localStorage.setItem('clinic_token', data.token);
+        window.location.href = 'dashboard.html';
+      } else {
+        alert(data.message || 'Login failed');
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      btn.textContent = 'Login';
+      btn.disabled = false;
+    }
+  });
 </script>
-
 </body>
 </html>
