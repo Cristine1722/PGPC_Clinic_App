@@ -63,7 +63,7 @@
 
       if (data.success) {
         localStorage.setItem('clinic_token', data.token);
-        window.location.href = 'dashboard.html';
+        window.location.href = 'dashboard_admin.html';
       } else {
         alert(data.message || 'Login failed');
       }
