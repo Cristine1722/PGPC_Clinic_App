@@ -29,6 +29,15 @@
             border: none;
             box-sizing: border-box;
         }
+
+        .auth-container select {
+            width: 90%;
+            padding: 10px;
+            margin-top: 12px;
+            border-radius: 6px;
+            border: none;
+            box-sizing: border-box;
+        }
         
         .auth-row {
             margin-top: 12px;
@@ -62,6 +71,10 @@
         
         <input id="idnumber" type="text" placeholder="ID Number" required />
         <input id="name" type="text" placeholder="Full Name" required />
+        <select id="role" required>
+            <option value="student" selected>Register as a Student</option>
+            <option value="admin">Register as an Admin/Staff</option>
+        </select>
         <input id="password" type="password" placeholder="Password" required />
 
         <div class="auth-row">
@@ -73,6 +86,7 @@
 <script>
         const idNumberEl = document.getElementById('idnumber');
         const nameEl = document.getElementById('name');
+        const roleEl = document.getElementById('role');
         const passwordEl = document.getElementById('password');
         const signupBtn = document.getElementById('signupBtn');
         const msgEl = document.getElementById('message');
@@ -83,8 +97,8 @@
         if (localStorage.getItem("clinic_token")) {
             try {
                 const token = localStorage.getItem("clinic_token");
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                if (payload.is_admin === true) {
+                const existingPayload = JSON.parse(atob(token.split('.')[1]));
+                if (existingPayload.is_admin === true) {
                     window.location.href = "dashboard_admin.html";
                 } else {
                     window.location.href = "dashboard_student.html";
@@ -101,7 +115,8 @@
             const payload = {
                 idnumber: idNumberEl.value,
                 name: nameEl.value,
-                password: passwordEl.value
+                password: passwordEl.value,
+                is_admin: roleEl.value === 'admin' // Send role selection
             };
 
             try {
@@ -111,8 +126,23 @@
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || "An error occurred.");
-                msgEl.textContent = "Signup successful! Please log in now.";
+                if (!res.ok || !data.token) {
+                    throw new Error(data.error || "An error occurred during signup.");
+                }
+
+                msgEl.textContent = "Success! Redirecting to your dashboard...";
+                localStorage.setItem("clinic_token", data.token);
+
+                setTimeout(() => {
+                    // Decode token to check if the new user is an admin
+                    const tokenPayload = JSON.parse(atob(data.token.split('.')[1]));
+                    if (tokenPayload.is_admin === true) {
+                        window.location.href = "dashboard_admin.html"; // Redirect first user to admin dashboard
+                    } else {
+                        window.location.href = "dashboard_student.html"; // Redirect subsequent users to student dashboard
+                    }
+                }, 1500); // Wait 1.5 seconds before redirecting
+
             } catch (err) {
                 msgEl.textContent = `Error: ${err.message}`;
             } finally {

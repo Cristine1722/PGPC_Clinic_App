@@ -57,47 +57,97 @@
 <div class="overlay"></div>
     <div class="auth-container">
         <div class="logo"></div>
-        <h2>Admin / Staff Login</h2>
+        <h2>Admin Login — PGPC Campus Clinic</h2>
         <p id="message" style="font-size:14px; color:#eee; min-height: 20px;"></p>
         
         <input id="idnumber" type="text" placeholder="ID Number" required />
         <input id="password" type="password" placeholder="Password" required />
 
         <div class="auth-row">
-            <button id="loginBtn">Login</button>
+            <button id="loginBtn" style="background-color: #28a745; color: white;">Login</button>
+        </div>
+        
+        <div style="margin-top: 15px;">
+            <a href="signup.html" style="color: #17a2b8; text-decoration: none; font-size: 0.95em;">Register new account</a>
         </div>
         <a href="index.html" class="back-to-home-link">Back to Home</a>
     </div>
 
 <script>
-    const idNumberEl = document.getElementById('idnumber');
-    const passwordEl = document.getElementById('password');
-    const loginBtn = document.getElementById('loginBtn');
-    const msgEl = document.getElementById('message');
-    
-    const API_URL = ""; // Use relative paths for production
+        const idNumberEl = document.getElementById('idnumber');
+        const passwordEl = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const msgEl = document.getElementById('message');
+        const API_URL = "http://127.0.0.1:5000";
 
-    async function handleLogin() {
-        msgEl.textContent = "Processing...";
-        loginBtn.disabled = true;
-
-        try {
-            const res = await fetch(`${API_URL}/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ idnumber: idNumberEl.value, password: passwordEl.value })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "An error occurred.");
-            localStorage.setItem("clinic_token", data.token);
-            window.location.href = "dashboard_admin.html";
-        } catch (err) {
-            msgEl.textContent = `Error: ${err.message}`;
-        } finally {
-            loginBtn.disabled = false;
+        // Check if already logged in
+        if (localStorage.getItem("clinic_token")) {
+             try {
+                const token = localStorage.getItem("clinic_token");
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.is_admin === true) {
+                    window.location.href = "dashboard_admin.html";
+                } else {
+                    window.location.href = "dashboard_student.html";
+                }
+            } catch (e) {
+                console.error("Invalid token", e);
+            }
         }
-    }
-    loginBtn.onclick = handleLogin;
+        
+        function decodeToken(token) {
+            try {
+                return JSON.parse(atob(token.split('.')[1]));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function handleLogin() {
+            msgEl.textContent = "Processing...";
+            loginBtn.disabled = true;
+
+            const payload = {
+                idnumber: idNumberEl.value,
+                password: passwordEl.value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "An error occurred.");
+
+                const tokenPayload = decodeToken(data.token);
+                const isAdmin = tokenPayload && tokenPayload.is_admin === true;
+
+                if (!isAdmin) {
+                    throw new Error("Access Denied. This login is for Admins/Staff only.");
+                }
+
+                localStorage.setItem("clinic_token", data.token);
+                window.location.href = "dashboard_admin.html";
+
+            } catch (err) {
+                msgEl.textContent = `Error: ${err.message}`;
+            } finally {
+                loginBtn.disabled = false;
+            }
+        }
+
+        loginBtn.onclick = handleLogin;
+
+        // Allow pressing Enter to login
+        passwordEl.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                handleLogin();
+            }
+        });
 </script>
 
 </body>

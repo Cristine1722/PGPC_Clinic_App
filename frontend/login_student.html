@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Student Login — PGPC Campus Clinic</title>
+    <title>Login — PGPC Campus Clinic</title>
     <link rel="stylesheet" href="styles.css" />
 
     <style>
@@ -57,7 +57,7 @@
 <div class="overlay"></div>
     <div class="auth-container">
         <div class="logo"></div>
-        <h2>Student Login — PGPC Campus Clinic</h2>
+        <h2>Login — PGPC Campus Clinic</h2>
         <p id="message" style="font-size:14px; color:#eee; min-height: 20px;"></p>
         
         <input id="idnumber" type="text" placeholder="ID Number" required />
@@ -75,7 +75,6 @@
         const loginBtn = document.getElementById('loginBtn');
         const msgEl = document.getElementById('message');
         
-        const API_URL = "http://127.0.0.1:5000";
 
         // If a token already exists, redirect to dashboard
         if (localStorage.getItem("clinic_token")) {
@@ -100,7 +99,7 @@
             };
 
             try {
-                const res = await fetch(`${API_URL}/login`, {
+                const res = await fetch(`/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
