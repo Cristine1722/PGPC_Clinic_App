@@ -125,6 +125,14 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
+
+                // Check if response is JSON
+                const contentType = res.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    const text = await res.text();
+                    throw new Error("Server Error: " + (text.substring(0, 100) || "Unknown error"));
+                }
+
                 const data = await res.json();
                 if (!res.ok || !data.token) {
                     throw new Error(data.error || "An error occurred during signup.");
